@@ -1,0 +1,11 @@
+:root {
+    --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+}
+
+#app,
+#app button,
+#app input,
+#app textarea,
+#app select {
+    font-family: var(--font-sans);
+}

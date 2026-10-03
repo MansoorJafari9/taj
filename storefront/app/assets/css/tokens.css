@@ -1,0 +1,20 @@
+:root {
+  --color-cream: #f3f8f5;
+  --color-off-white: #ffffff;
+  --color-beige: #eaf1ed;
+  --color-brown: #216748;
+  --color-charcoal: #26332f;
+  --color-muted: #687771;
+  --color-gold: #c98336;
+  --color-gold-hover: #aa6929;
+  --color-danger: #a33a32;
+  --color-success: #347052;
+  --color-border: #dce9e1;
+  --font-sans: Vazirmatn, ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --shadow-soft: 0 18px 48px rgb(21 59 52 / 9%);
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+}

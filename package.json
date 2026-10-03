@@ -1,0 +1,9 @@
+{
+  "name": "myshop-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:storefront": "npm --prefix storefront run dev"
+  }
+}

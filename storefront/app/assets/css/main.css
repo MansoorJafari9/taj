@@ -1,0 +1,78 @@
+@import "tailwindcss";
+@import "@fontsource/vazirmatn/400.css";
+@import "@fontsource/vazirmatn/500.css";
+@import "@fontsource/vazirmatn/600.css";
+@import "@fontsource/vazirmatn/700.css";
+@import "./tokens.css";
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-off-white: var(--color-off-white);
+  --color-beige: var(--color-beige);
+  --color-brown: var(--color-brown);
+  --color-charcoal: var(--color-charcoal);
+  --color-muted: var(--color-muted);
+  --color-gold: var(--color-gold);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
+  --color-border: var(--color-border);
+  --font-sans: var(--font-sans);
+}
+
+html {
+  background: var(--color-off-white);
+  color: var(--color-charcoal);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #d9ece0;
+  color: #153b34;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: Vazirmatn, sans-serif;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid #2d745b;
+  outline-offset: 3px;
+}
+
+.search-field:focus-visible {
+  outline: none;
+}
+
+.search-shell:focus-within {
+  border-color: #5ca878;
+  box-shadow: 0 0 0 3px rgb(79 151 105 / 16%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
