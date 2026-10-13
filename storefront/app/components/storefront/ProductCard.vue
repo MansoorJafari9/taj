@@ -20,7 +20,8 @@ const formattedDiscountedPrice = computed(() => primaryVariant.value && discount
 </script>
 
 <template>
-  <article class="group min-w-0 overflow-hidden rounded-[1.35rem] border border-border bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c8dccf] hover:shadow-soft">
+  <article class="group relative min-w-0 overflow-hidden rounded-[1.35rem] border border-border bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c8dccf] hover:shadow-soft">
+    <div class="absolute start-2 top-2 z-10 sm:start-3 sm:top-3"><StorefrontProductSaveActions :product-id="product.id" compact /></div>
     <NuxtLink :to="localePath(productPath(product))" class="relative block overflow-hidden bg-cream">
       <span v-if="discountedPrice !== null" class="absolute end-3 top-3 z-10 rounded-full bg-brown px-3 py-1 text-xs font-bold text-white">{{ $t('shop.salePercent', { percent: primaryVariant?.saleOffer?.percentage }) }}</span>
       <div class="aspect-square overflow-hidden bg-cream">

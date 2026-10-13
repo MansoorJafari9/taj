@@ -4,6 +4,8 @@ import { categoryPath } from '~/services/api/categories.service'
 
 defineProps<{ categories: CategoryTreeItem[] }>()
 const localePath = useLocalePath()
+const siteName = useSiteName()
+const { data: siteSettings } = useSiteSettings()
 const year = new Date().getFullYear()
 
 function backToTop() {
@@ -27,11 +29,12 @@ function backToTop() {
 
       <div class="grid gap-x-10 gap-y-12 py-12 sm:grid-cols-2 lg:grid-cols-[1.35fr_.65fr_.65fr_1fr] lg:py-16">
         <div class="max-w-xs">
-          <NuxtLink :to="localePath('/')" class="inline-flex items-center gap-3 text-xl font-bold tracking-tight" :aria-label="$t('brand.name')">
-            <span class="grid size-12 place-items-center rounded-2xl border border-white/15 bg-white/10">
+          <NuxtLink :to="localePath('/')" class="inline-flex items-center gap-3 text-xl font-bold tracking-tight" :aria-label="siteName">
+            <img v-if="siteSettings?.siteLogoUrl" :src="siteSettings.siteLogoUrl" :alt="siteName" class="size-12 rounded-2xl object-contain">
+            <span v-else class="grid size-12 place-items-center rounded-2xl border border-white/15 bg-white/10">
               <svg viewBox="0 0 36 36" class="size-7" fill="none" aria-hidden="true"><path d="M18 29C10.6 25.8 7.6 20.8 8.2 14.2c5.6.2 10.2 3.9 10.8 9.1.6-5.2 5.2-8.9 10.8-9.1.6 6.6-2.4 11.6-9.8 14.8" fill="#dcead9"/><path d="M18 26V8m0 6c-2.1-3-4.5-4.3-7.5-4.4M18 17c2.1-3 4.5-4.3 7.5-4.4" stroke="#d8ad6d" stroke-width="2" stroke-linecap="round"/></svg>
             </span>
-            {{ $t('brand.name') }}
+            {{ siteName }}
           </NuxtLink>
           <p class="mt-5 text-sm leading-8 text-[#bad1c5]">{{ $t('shop.footerDescription') }}</p>
           <div class="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold text-[#dce9df]"><span v-for="flavour in ['heroNut', 'heroDried', 'heroChocolate']" :key="flavour" class="rounded-full border border-white/15 px-3 py-1.5">{{ $t(`shop.${flavour}`) }}</span></div>
@@ -42,8 +45,11 @@ function backToTop() {
           <ul class="mt-5 space-y-3.5 text-sm text-[#bad1c5]">
             <li><NuxtLink :to="localePath('/')" class="transition hover:text-white">{{ $t('navigation.home') }}</NuxtLink></li>
             <li><NuxtLink :to="localePath('/products')" class="transition hover:text-white">{{ $t('navigation.products') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/blog')" class="transition hover:text-white">{{ $t('navigation.blog') }}</NuxtLink></li>
             <li><NuxtLink :to="localePath('/categories')" class="transition hover:text-white">{{ $t('navigation.categories') }}</NuxtLink></li>
             <li><NuxtLink :to="localePath('/cart')" class="transition hover:text-white">{{ $t('navigation.cart') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/about')" class="transition hover:text-white">{{ $t('navigation.about') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/contact')" class="transition hover:text-white">{{ $t('navigation.contact') }}</NuxtLink></li>
           </ul>
         </nav>
 
@@ -63,7 +69,7 @@ function backToTop() {
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-6 text-xs text-[#a8c2b5]">
-        <p>© {{ year }} {{ $t('brand.name') }}. {{ $t('shop.footerCopyright') }}</p>
+        <p>© {{ year }} {{ siteName }}. {{ $t('shop.footerCopyright') }}</p>
         <button type="button" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2.5 font-semibold text-white transition hover:bg-white/10" @click="backToTop">{{ $t('shop.backToTop') }}<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6" /></svg></button>
       </div>
     </div>

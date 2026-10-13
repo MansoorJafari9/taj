@@ -5,6 +5,7 @@ import { homeCollectionSlugs } from '~/constants/homeCollections'
 const { t, locale } = useI18n()
 const { $services } = useNuxtApp()
 const localePath = useLocalePath()
+const siteName = useSiteName()
 
 const { data, pending, error } = await useAsyncData(
   'home-catalog',
@@ -18,12 +19,14 @@ const { data, pending, error } = await useAsyncData(
   ]),
   { watch: [locale] },
 )
+const { data: blogData } = await useAsyncData('home-blog', () => $services.blog.list(locale.value, { take: 3 }), { watch: [locale] })
 
 const categories = computed(() => data.value?.[0] ?? [])
 const products = computed(() => data.value?.[1] ?? [])
 const saleProducts = computed(() => data.value?.[2] ?? [])
 const popularProducts = computed(() => data.value?.[3]?.products.slice(0, 8) ?? [])
-useTajSeo({ title: computed(() => t('brand.name')), description: computed(() => t('shop.heroDescription')) })
+const latestPosts = computed(() => blogData.value?.items ?? [])
+useTajSeo({ title: siteName, description: computed(() => t('shop.heroDescription')) })
 </script>
 
 <template>
@@ -97,6 +100,8 @@ useTajSeo({ title: computed(() => t('brand.name')), description: computed(() => 
       </div>
       <div class="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4"><StorefrontProductCard v-for="product in saleProducts" :key="product.id" :product="product" /></div>
     </section>
+
+    <section v-if="latestPosts.length" class="border-t border-border bg-[#f8fbf9]"><div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20"><div class="mb-8 flex items-end justify-between gap-4"><div><p class="text-xs font-bold text-gold">{{ $t('blog.eyebrow') }}</p><h2 class="mt-2 text-2xl font-bold text-brown sm:text-3xl">{{ $t('blog.latest') }}</h2></div><NuxtLink :to="localePath('/blog')" class="text-sm font-bold text-brown hover:underline">{{ $t('actions.viewAll') }}</NuxtLink></div><div class="grid gap-5 md:grid-cols-3"><StorefrontBlogCard v-for="post in latestPosts" :key="post.id" :post="post" /></div></div></section>
 
     <HomeStory />
   </div>

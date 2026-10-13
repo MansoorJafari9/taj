@@ -1,5 +1,5 @@
 import {
-    dummyPaymentHandler,
+    DefaultGuestCheckoutStrategy,
     DefaultJobQueuePlugin,
     DefaultSchedulerPlugin,
     DefaultSearchPlugin,
@@ -14,8 +14,11 @@ import { PersianDashboardPlugin } from './plugins/persian-dashboard/persian-dash
 import './plugins/persian-dashboard/promotion-translations';
 import './plugins/persian-dashboard/collection-filter-translations';
 import { CatalogSalePlugin } from './plugins/catalog-sale/catalog-sale.plugin';
+import { BlogPlugin } from './plugins/blog/blog.plugin';
+import { ZarinpalPlugin, zarinpalPaymentHandler } from './plugins/zarinpal/zarinpal.plugin';
 import { config as loadEnv } from 'dotenv';
 import path from 'path';
+import { OwnerOnlyOrderByCodeAccessStrategy, SixDigitOrderCodeStrategy } from './order-code.strategy';
 
 // The backend lives in a subdirectory while the shared project environment file
 // remains at the repository root. This path works from both src/ in development
@@ -33,6 +36,7 @@ export const config: VendureConfig = {
     defaultLanguageCode: LanguageCode.fa,
     apiOptions: {
         port: serverPort,
+        csrfPrevention: true,
         adminApiPath: 'admin-api',
         shopApiPath: 'shop-api',
         trustProxy: IS_DEV ? false : 1,
@@ -54,6 +58,7 @@ export const config: VendureConfig = {
         } : {}),
     },
     authOptions: {
+        requireVerification: false,
         tokenMethod: ['bearer', 'cookie'],
         superadminCredentials: {
             identifier: process.env.SUPERADMIN_USERNAME,
@@ -78,14 +83,35 @@ export const config: VendureConfig = {
         password: process.env.DB_PASSWORD,
     },
     paymentOptions: {
-        paymentMethodHandlers: [dummyPaymentHandler],
+        paymentMethodHandlers: [zarinpalPaymentHandler],
+    },
+    orderOptions: {
+        orderCodeStrategy: new SixDigitOrderCodeStrategy(),
+        orderByCodeAccessStrategy: new OwnerOnlyOrderByCodeAccessStrategy(),
+        guestCheckoutStrategy: new DefaultGuestCheckoutStrategy({
+            allowGuestCheckouts: false,
+            allowGuestCheckoutForRegisteredCustomers: false,
+        }),
     },
     // When adding or altering custom field definitions, the database will
     // need to be updated. See the "Migrations" section in README.md.
-    customFields: {},
+    customFields: {
+        Channel: [
+            { name: 'siteName', type: 'string', label: [{ languageCode: LanguageCode.fa, value: 'نام سایت' }] },
+            { name: 'siteLogoUrl', type: 'string', label: [{ languageCode: LanguageCode.fa, value: 'لوگوی سایت' }], ui: { component: 'site-image-picker' } },
+            { name: 'faviconUrl', type: 'string', label: [{ languageCode: LanguageCode.fa, value: 'آیکون سایت (favicon)' }], ui: { component: 'site-image-picker' } },
+            { name: 'aboutContent', type: 'text', label: [{ languageCode: LanguageCode.fa, value: 'محتوای صفحه درباره ما' }], ui: { component: 'rich-text-form-input' } },
+            { name: 'contactContent', type: 'text', label: [{ languageCode: LanguageCode.fa, value: 'محتوای صفحه تماس با ما' }], ui: { component: 'rich-text-form-input' } },
+            { name: 'contactEmail', type: 'string', label: [{ languageCode: LanguageCode.fa, value: 'ایمیل تماس' }] },
+            { name: 'contactPhone', type: 'string', label: [{ languageCode: LanguageCode.fa, value: 'شماره تماس' }] },
+            { name: 'contactAddress', type: 'text', label: [{ languageCode: LanguageCode.fa, value: 'آدرس فروشگاه' }] },
+        ],
+    },
     plugins: [
         PersianDashboardPlugin,
         CatalogSalePlugin,
+        BlogPlugin,
+        ZarinpalPlugin,
         GraphiqlPlugin.init(),
         AssetServerPlugin.init({
             route: 'assets',

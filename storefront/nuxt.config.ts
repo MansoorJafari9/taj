@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: 'http://localhost:3000/shop-api',
+      apiBaseUrl: 'http://127.0.0.1:3000/shop-api',
       channelToken: '',
       siteUrl: 'http://localhost:3001',
     },

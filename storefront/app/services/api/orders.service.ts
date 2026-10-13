@@ -22,6 +22,9 @@ export type ActiveOrderSummary = {
   totalWithTax: number
   currencyCode: string
   totalQuantity: number
+  shippingWithTax: number
+  shippingAddress?: { fullName?: string | null, phoneNumber?: string | null, streetLine1?: string | null, streetLine2?: string | null, city?: string | null, province?: string | null, postalCode?: string | null, countryCode?: string | null } | null
+  shippingLines?: Array<{ shippingMethod: { id: string, name: string } }>
   lines: OrderLineSummary[]
 }
 
@@ -37,7 +40,9 @@ export class OrderMutationError extends Error {
 }
 
 const orderFields = `
-  id code state totalWithTax currencyCode totalQuantity
+  id code state totalWithTax currencyCode totalQuantity shippingWithTax
+  shippingAddress { fullName phoneNumber streetLine1 streetLine2 city province postalCode countryCode }
+  shippingLines { shippingMethod { id name } }
   lines {
     id quantity unitPriceWithTax linePriceWithTax discountedUnitPriceWithTax discountedLinePriceWithTax
     productVariant { id name product { id slug } }
@@ -110,6 +115,47 @@ export function createOrdersService(client: ApiClient) {
         variables: { orderLineId },
       })
       return unwrapOrder(data.removeOrderLine)
+    },
+    async setShippingAddress(input: { fullName: string, streetLine1: string, streetLine2?: string, city: string, province: string, postalCode: string, phoneNumber: string, countryCode: string }) {
+      const data = await client.query<{ setOrderShippingAddress: OrderMutationResult }, { input: typeof input }>({
+        query: `mutation SetShippingAddress($input: CreateAddressInput!) { setOrderShippingAddress(input: $input) { __typename ... on Order { ${orderFields} } ... on ErrorResult { errorCode message } } }`,
+        variables: { input },
+      })
+      return unwrapOrder(data.setOrderShippingAddress)
+    },
+    async eligibleShippingMethods(): Promise<Array<{ id: string, name: string, description: string, priceWithTax: number }>> {
+      const data = await client.query<{ eligibleShippingMethods: Array<{ id: string, name: string, description: string, priceWithTax: number }> }>({
+        query: `query EligibleShippingMethods { eligibleShippingMethods { id name description priceWithTax } }`,
+      })
+      return data.eligibleShippingMethods
+    },
+    async setShippingMethod(id: string) {
+      const data = await client.query<{ setOrderShippingMethod: OrderMutationResult }, { ids: string[] }>({
+        query: `mutation SetShippingMethod($ids: [ID!]!) { setOrderShippingMethod(shippingMethodId: $ids) { __typename ... on Order { ${orderFields} } ... on ErrorResult { errorCode message } } }`,
+        variables: { ids: [id] },
+      })
+      return unwrapOrder(data.setOrderShippingMethod)
+    },
+    async transitionTo(state: 'AddingItems' | 'ArrangingPayment') {
+      const data = await client.query<{ transitionOrderToState: OrderMutationResult }, { state: string }>({
+        query: `mutation TransitionOrder($state: String!) { transitionOrderToState(state: $state) { __typename ... on Order { ${orderFields} } ... on ErrorResult { errorCode message } } }`,
+        variables: { state },
+      })
+      return unwrapOrder(data.transitionOrderToState)
+    },
+    async startZarinpal(languageCode: 'fa' | 'en'): Promise<{ url: string, authority: string }> {
+      const data = await client.query<{ startZarinpalPayment: { url: string, authority: string } }>({
+        query: `mutation StartZarinpalPayment { startZarinpalPayment { url authority } }`,
+        languageCode,
+      })
+      return data.startZarinpalPayment
+    },
+    async confirmZarinpal(authority: string, status: string): Promise<{ success: boolean, orderCode: string, referenceId: string | null }> {
+      const data = await client.query<{ confirmZarinpalPayment: { success: boolean, orderCode: string, referenceId: string | null } }, { authority: string, status: string }>({
+        query: `mutation ConfirmZarinpalPayment($authority: String!, $status: String!) { confirmZarinpalPayment(authority: $authority, status: $status) { success orderCode referenceId } }`,
+        variables: { authority, status },
+      })
+      return data.confirmZarinpalPayment
     },
   }
 }

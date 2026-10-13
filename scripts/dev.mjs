@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
+import { createServer } from 'node:net'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
@@ -9,6 +10,21 @@ const services = [
   { name: 'backend', directory: 'backend' },
   { name: 'storefront', directory: 'storefront' },
 ]
+
+// Check before spawning anything: a second workspace launch must not start a
+// storefront alongside an existing backend and accidentally capture its API port.
+for (const [name, port] of [['backend', 3000], ['storefront', 3001], ['dashboard', 5173]]) {
+  try {
+    await new Promise((resolve, reject) => {
+      const probe = createServer()
+      probe.once('error', reject)
+      probe.listen({ port, host: '::', exclusive: true }, () => probe.close(resolve))
+    })
+  } catch (error) {
+    console.error(`[${name}] Cannot start: port ${port} is unavailable (${error.code}). Stop the existing dev process before running npm run dev again.`)
+    process.exit(1)
+  }
+}
 
 let stopping = false
 let exitCode = 0

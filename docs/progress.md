@@ -21,13 +21,25 @@
 - Environment example and storefront run instructions added.
 - Production build and locale-routing runtime smoke test passed.
 
+### Blog and SEO
+
+- Vendure `BlogPlugin` stores articles in PostgreSQL with draft/publish status, language, category, image URL, and SEO fields.
+- Admin and Shop GraphQL APIs are implemented; Shop API exposes published articles only.
+- Persian article editor is available under Dashboard → Marketing → مقالات بلاگ.
+- Nuxt blog list and detail pages are server-rendered and linked from the navigation, footer and homepage.
+- Article metadata includes canonical, Open Graph, `BlogPosting` JSON-LD, and `hreflang` only for published translations.
+- Dynamic `sitemap.xml` includes published articles, products and categories; dynamic `robots.txt` points to it.
+
+## Editorial workflow and deployment
+
+1. Create an article in the Dashboard with a Latin slug, title, excerpt and rich-text body.
+2. Upload a cover image to Vendure Assets and paste its public URL into the article editor.
+3. Fill optional SEO title and description, then publish. Drafts do not appear in the Shop API or sitemap.
+4. To publish an English translation, create an English article with the same slug.
+5. Run migrations on deployment. Set `NUXT_PUBLIC_SITE_URL` and `NUXT_PUBLIC_API_BASE_URL` to the public origins.
+
 ## Current limitations
 
-- Product, cart and admin routes contain foundation placeholders only.
-- Blog and settings services await their custom Vendure GraphQL schema.
-- Authentication mutations and session initialization are not implemented yet.
-- The local Node.js version is 22.13; Nuxt 4.5 declares Node 22.19 or newer as its supported runtime.
-
-## Next task
-
-Implement the customer storefront described in `docs/11-storefront.md`, using the existing API service layer and SSR conventions.
+- The cover image URL is pasted manually; there is no Dashboard asset picker yet.
+- Blog content is initially empty until editors publish articles.
+- Authentication and checkout flows remain separate work.

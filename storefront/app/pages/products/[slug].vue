@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import sanitizeHtml from 'sanitize-html'
+import { sanitizeContent } from '~/utils/sanitizeContent'
 import { formatPrice } from '~/utils/formatPrice'
 import { OrderMutationError } from '~/services/api/orders.service'
 import { salePrice } from '~/utils/salePrice'
@@ -8,6 +8,7 @@ const route = useRoute()
 const { t, locale } = useI18n()
 const { $services } = useNuxtApp()
 const localePath = useLocalePath()
+const siteName = useSiteName()
 const cart = useCartStore()
 const slug = computed(() => String(route.params.slug))
 const selectedVariantId = ref<string>()
@@ -40,11 +41,7 @@ watch(selectedVariantId, () => {
   added.value = false
 })
 const selectedVariant = computed(() => product.value?.variants.find(variant => variant.id === selectedVariantId.value) ?? product.value?.variants[0])
-const safeDescription = computed(() => sanitizeHtml(product.value?.description ?? '', {
-  allowedTags: ['p', 'br', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'a', 'h2', 'h3', 'blockquote'],
-  allowedAttributes: { a: ['href', 'title'] },
-  allowedSchemes: ['http', 'https', 'mailto'],
-}))
+const safeDescription = computed(() => sanitizeContent(product.value?.description))
 const formattedPrice = computed(() => selectedVariant.value ? formatPrice(selectedVariant.value.priceWithTax, selectedVariant.value.currencyCode, locale.value) : '')
 const discountedPrice = computed(() => selectedVariant.value ? salePrice(selectedVariant.value) : null)
 const formattedDiscountedPrice = computed(() => selectedVariant.value && discountedPrice.value !== null ? formatPrice(discountedPrice.value, selectedVariant.value.currencyCode, locale.value) : '')
@@ -66,7 +63,7 @@ async function addToCart() {
     adding.value = false
   }
 }
-useTajSeo({ title: computed(() => product.value ? `${product.value.name} | ${t('brand.name')}` : t('shop.productNotFound')), description: computed(() => product.value?.description || t('shop.productsDescription')) })
+useTajSeo({ title: computed(() => product.value ? `${product.value.name} | ${siteName.value}` : t('shop.productNotFound')), description: computed(() => product.value?.description || t('shop.productsDescription')) })
 </script>
 
 <template>
@@ -104,6 +101,7 @@ useTajSeo({ title: computed(() => product.value ? `${product.value.name} | ${t('
           </div>
           <BaseButton class="h-12 min-w-48 rounded-full px-8" :loading="adding" :disabled="!canAdd" @click="addToCart">{{ $t('shop.addToCart') }}</BaseButton>
         </div>
+        <div class="mt-5"><StorefrontProductSaveActions :product-id="product.id" /></div>
         <div class="mt-4 min-h-7 text-sm" aria-live="polite">
           <p v-if="addError" class="font-medium text-danger">{{ addError }}</p>
           <p v-else-if="added" class="font-medium text-success">{{ $t('shop.addedToCart') }} <NuxtLink :to="localePath('/cart')" class="ms-2 underline underline-offset-4">{{ $t('shop.viewCart') }}</NuxtLink></p>

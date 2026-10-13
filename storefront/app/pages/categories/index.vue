@@ -3,6 +3,7 @@ import type { CategoryTreeItem } from '~/services/api/categories.service'
 
 const { t, locale } = useI18n()
 const { $services } = useNuxtApp()
+const siteName = useSiteName()
 
 const { data, pending, error } = await useAsyncData(
   'collections-catalog',
@@ -13,7 +14,7 @@ function flattenCategories(items: CategoryTreeItem[]): CategoryTreeItem[] {
   return items.flatMap(item => [item, ...flattenCategories(item.children)])
 }
 const categories = computed(() => flattenCategories(data.value ?? []))
-useTajSeo({ title: computed(() => `${t('shop.categoriesTitle')} | ${t('brand.name')}`), description: computed(() => t('shop.categoriesDescription')) })
+useTajSeo({ title: computed(() => `${t('shop.categoriesTitle')} | ${siteName.value}`), description: computed(() => t('shop.categoriesDescription')) })
 </script>
 
 <template>

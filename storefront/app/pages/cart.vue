@@ -5,6 +5,7 @@ import { formatPrice } from '~/utils/formatPrice'
 
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
+const siteName = useSiteName()
 const { $services } = useNuxtApp()
 const cart = useCartStore()
 const busyLineId = ref<string | null>(null)
@@ -37,13 +38,13 @@ async function changeQuantity(lineId: string, quantity: number) {
   }
 }
 
-useTajSeo({ title: computed(() => `${t('navigation.cart')} | ${t('brand.name')}`), description: computed(() => t('shop.emptyCartDescription')) })
+useTajSeo({ title: computed(() => `${t('navigation.cart')} | ${siteName.value}`), description: computed(() => t('shop.emptyCartDescription')) })
 </script>
 
 <template>
   <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
     <div class="mb-9 flex flex-wrap items-end justify-between gap-4">
-      <div><p class="text-xs font-bold tracking-[0.16em] text-gold">{{ $t('brand.name') }}</p><h1 class="mt-2 text-3xl font-bold text-brown sm:text-4xl">{{ $t('navigation.cart') }}</h1></div>
+      <div><p class="text-xs font-bold tracking-[0.16em] text-gold">{{ siteName }}</p><h1 class="mt-2 text-3xl font-bold text-brown sm:text-4xl">{{ $t('navigation.cart') }}</h1></div>
       <NuxtLink :to="localePath('/products')" class="text-sm font-semibold text-brown underline decoration-gold underline-offset-4">{{ $t('shop.continueShopping') }}</NuxtLink>
     </div>
 
@@ -82,7 +83,8 @@ useTajSeo({ title: computed(() => `${t('navigation.cart')} | ${t('brand.name')}`
       <aside class="rounded-[1.5rem] border border-border bg-[#f8fbf9] p-6 lg:sticky lg:top-40">
         <h2 class="text-lg font-bold text-brown">{{ $t('shop.orderSummary') }}</h2>
         <div class="mt-6 flex items-center justify-between border-t border-border pt-5 text-sm"><span class="text-muted">{{ $t('shop.itemsCount', { count: cart.itemCount }) }}</span><span class="font-bold text-brown">{{ formatPrice(cart.order.totalWithTax, cart.order.currencyCode, locale) }}</span></div>
-        <p class="mt-5 text-xs leading-6 text-muted">{{ $t('shop.checkoutComingSoon') }}</p>
+        <NuxtLink :to="localePath('/checkout')" class="mt-6 flex w-full items-center justify-center rounded-full bg-brown px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d745b]">{{ locale === 'fa' ? 'ادامه و تسویه حساب' : 'Continue to checkout' }}</NuxtLink>
+        <p class="mt-3 text-xs leading-6 text-muted">{{ locale === 'fa' ? 'برای ثبت سفارش و پرداخت باید وارد حساب شوید.' : 'Sign in is required to place and pay for an order.' }}</p>
       </aside>
     </div>
     <p v-if="errorMessage" role="alert" class="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-danger">{{ errorMessage }}</p>

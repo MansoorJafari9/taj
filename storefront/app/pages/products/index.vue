@@ -4,6 +4,7 @@ const router = useRouter()
 const { t, locale } = useI18n()
 const { $services } = useNuxtApp()
 const localePath = useLocalePath()
+const siteName = useSiteName()
 const perPage = 12
 const search = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
 const page = computed(() => Math.max(1, Number(route.query.page) || 1))
@@ -21,7 +22,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / perPa
 function submitSearch() { router.push(localePath({ path: '/products', query: searchDraft.value ? { q: searchDraft.value } : {} })) }
 function pageTo(target: number) { return localePath({ path: '/products', query: { ...(search.value ? { q: search.value } : {}), ...(target > 1 ? { page: String(target) } : {}) } }) }
 useTajSeo({
-  title: computed(() => `${t('shop.productsTitle')} | ${t('brand.name')}`),
+  title: computed(() => `${t('shop.productsTitle')} | ${siteName.value}`),
   description: computed(() => t('shop.productsDescription')),
 })
 </script>

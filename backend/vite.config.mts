@@ -8,16 +8,14 @@ export default defineConfig({
     build: {
         outDir: join(__dirname, 'dist/dashboard'),
     },
-    // The dashboard source is served from @vendure/dashboard during development.
-    // Explicitly allow the self-hosted font package as well, so Vite can resolve
-    // the font files referenced by its CSS instead of rejecting their requests.
+    // Dashboard sources live in node_modules and import local extensions and
+    // shared dependencies. Allow the backend root so all of them can be served.
     server: {
         port: 5173,
         strictPort: true,
         fs: {
             allow: [
-                resolve(__dirname, 'node_modules/@vendure/dashboard'),
-                resolve(__dirname, 'node_modules/@fontsource/vazirmatn'),
+                resolve(__dirname),
             ],
         },
     },
@@ -42,7 +40,7 @@ export default defineConfig({
             // the Vite dev server can reach the Vendure backend.
             api: process.env.NODE_ENV === 'production'
                 ? { host: 'auto', port: 'auto' }
-                : { host: 'http://localhost', port: 3000 },
+                : { host: 'http://127.0.0.1', port: 3000 },
             // When you start the Vite server, your Admin API schema will
             // be introspected and the types will be generated in this location.
             // These types can be used in your dashboard extensions to provide
@@ -52,6 +50,10 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
+            '@/vdb/framework/page/use-extended-router.js': resolve(__dirname, './src/plugins/persian-dashboard/dashboard/use-extended-router.ts'),
+            // Vendure's built-in MoneyInput hard-codes two decimals. Replace only
+            // its Dashboard component so IRR/IRT inputs can show whole tomans.
+            '@/vdb/components/data-input/money-input.js': resolve(__dirname, './src/plugins/persian-dashboard/dashboard/whole-toman-money-input.tsx'),
             // This allows all plugins to reference a shared set of
             // GraphQL types.
             '@/gql': resolve(__dirname, './src/gql/graphql.ts'),

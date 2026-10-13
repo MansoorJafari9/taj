@@ -91,6 +91,18 @@ export function createProductsService(client: ApiClient) {
         .slice(0, take)
     },
 
+    async listByIds(ids: string[], locale: SupportedLocale): Promise<ProductSummary[]> {
+      if (!ids.length) return []
+      const uniqueIds = [...new Set(ids)]
+      const data = await client.query<ProductsData, { options: { take: number, filter: { id: { in: string[] } } } }>({
+        query: productsQuery,
+        variables: { options: { take: uniqueIds.length, filter: { id: { in: uniqueIds } } } },
+        languageCode: locale,
+      })
+      const byId = new Map(data.products.items.map(item => [item.id, item]))
+      return uniqueIds.map(id => byId.get(id)).filter((item): item is ProductSummary => !!item)
+    },
+
     async getByIdentifier(identifier: string, locale: SupportedLocale): Promise<ProductDetail | null> {
       const byId = identifier.startsWith('id-')
       const data = await client.query<{ product: ProductDetail | null }, { id?: string, slug?: string }>({
