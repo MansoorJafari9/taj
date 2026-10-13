@@ -58,20 +58,30 @@ the server & worker processes.
 
 ### Using Docker
 
-We've included a sample [Dockerfile](./Dockerfile) which you can build with the following command:
+The [Dockerfile](./Dockerfile) builds the API, worker and dashboard in a build stage,
+then copies the compiled files, email templates and production dependencies into a
+runtime image. The default command starts the API. From this directory, build it with:
 
 ```
-docker build -t vendure .
+docker build -t taj-backend:local .
 ```
 
 This builds an image and tags it with the name "vendure". We can then run it with:
 
 ```
-# Run the server
-docker run -dp 3000:3000 -e "DB_HOST=host.docker.internal" --name vendure-server vendure npm run start:server
+# Run the server with the repository-root environment file
+docker run -d --init -p 3000:3000 --env-file ../.env \
+  -e APP_ENV=prod -e DB_HOST=host.docker.internal \
+  -v taj-assets:/app/static/assets \
+  -v taj-email-output:/app/static/email/test-emails \
+  --name vendure-server taj-backend:local
 
-# Run the worker
-docker run -dp 3000:3000 -e "DB_HOST=host.docker.internal" --name vendure-worker vendure npm run start:worker
+# Run the worker after the server has completed database migrations
+docker run -d --init --env-file ../.env \
+  -e APP_ENV=prod -e DB_HOST=host.docker.internal \
+  -v taj-assets:/app/static/assets \
+  -v taj-email-output:/app/static/email/test-emails \
+  --name vendure-worker taj-backend:local node dist/index-worker.js
 ```
 
 Here is a breakdown of the command used above:
@@ -85,8 +95,14 @@ are setting the `DB_HOST` to point to a special DNS name that is created by Dock
 the host machine. Note that `host.docker.internal` only exists in a Docker Desktop environment and thus should only be
 used in development.
 - `--name vendure-server` - we give the container a human-readable name.
-- `vendure` - we are referencing the tag we set up during the build.
-- `npm run start:server` - this last part is the actual command that should be run inside the container.
+- `taj-backend:local` - the image tag created during the build.
+- `node dist/index-worker.js` - overrides the default API command to start the worker.
+
+The image runs as the `node` user. Keep the asset and generated-email volumes shared
+between the API and worker. Set `DB_PORT` to the host's published database port when
+using `host.docker.internal`, or use a database container's name and internal port
+on a shared Docker network. Set `CORS_ORIGINS` to the storefront's public origin.
+See [the Docker guide](../docs/docker.md) for the storefront image and deployment settings.
 
 ### Docker Compose
 
