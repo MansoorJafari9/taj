@@ -17,6 +17,7 @@ backend/static/email/test-emails/
 .env
 .env.*
 !.env.example
+!.env.production.example
 *.log
 logs/
 

@@ -38,9 +38,9 @@ The default command runs migrations and starts the API on port 3000. The same im
 starts a worker when its command is overridden. The worker does not need a published
 port. The dashboard is included and served at `/dashboard`.
 
-The current application configuration contains a fixed production asset URL
-(`https://www.my-shop.com/assets/`) and uses email dev mode. Update those application
-settings for your deployment. The existing migrations assume an initialized Vendure
+Set `ASSET_URL_PREFIX` to the backend's public asset URL (with a trailing slash).
+The current application configuration uses email dev mode; configure real email
+delivery separately. The existing migrations assume an initialized Vendure
 database; building the image does not initialize a database.
 
 ## Storefront
@@ -65,3 +65,5 @@ to resolve in the host browser as well, or use a shared reachable host address.
 
 References: [Docker Node guide](https://docs.docker.com/guides/nodejs/) and
 [Nitro Node deployment](https://nitro.build/deploy/runtimes/node).
+
+For the private registry and the server Compose file, see [DEPLOYMENT.md](../DEPLOYMENT.md).

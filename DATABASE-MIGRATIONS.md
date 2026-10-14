@@ -76,7 +76,7 @@ docker run --rm --init \
     runMigrations(config)
       .then(result => {
         console.log("Applied migrations:", result);
-        process.exit(0);
+        process.exit(process.exitCode || 0);
       })
       .catch(error => {
         console.error(error);
@@ -100,7 +100,7 @@ docker run --rm --init \
     runMigrations(config)
       .then(result => {
         console.log("Applied migrations:", result);
-        process.exit(0);
+        process.exit(process.exitCode || 0);
       })
       .catch(error => {
         console.error(error);
