@@ -1,17 +1,84 @@
 # اجرای پروژه روی سرور
 
-ایمیج‌ها در رجیستری زیر منتشر می‌شوند و تگ مشترک `latest` هر دو معماری Linux AMD64 و ARM64 را پوشش می‌دهد:
+فایل `compose.yaml` همان سرویس‌های PostgreSQL و رجیستری سرور را همراه با بک‌اند Vendure، Worker، سرویس مایگریشن و فرانت Nuxt اجرا می‌کند.
+
+ایمیج‌های برنامه برای Linux AMD64 و ARM64 در این آدرس‌ها منتشر شده‌اند:
 
 ```text
-188.212.97.228:5000/taj-front:latest
 188.212.97.228:5000/taj-back:latest
+188.212.97.228:5000/taj-front:latest
 ```
 
-فایل `compose.yaml` شامل فرانت، API، Worker و یک سرویس موقت اجرای مایگریشن است. Worker از همان ایمیج بک‌اند استفاده می‌کند. این تنظیمات به PostgreSQL موجود روی سرور متصل می‌شوند و دیتابیس جدیدی راه‌اندازی نمی‌کنند.
+## فایل‌ها و متغیرهای محیطی
 
-## ۱. دسترسی Docker سرور به رجیستری
+ساختار پوشه روی سرور:
 
-این رجیستری با HTTP کار می‌کند. در فایل `/etc/docker/daemon.json` روی سرور، آدرس آن را به `insecure-registries` اضافه کنید. اگر فایل تنظیمات دیگری دارد، این گزینه را با تنظیمات موجود ادغام کنید؛ فایل را کامل بازنویسی نکنید:
+```text
+server-folder/
+├── compose.yaml
+├── .env              # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+├── auth/
+│   └── htpasswd      # فایل فعلی احراز هویت رجیستری
+├── panel/
+│   └── .env          # بک‌اند Vendure
+└── taj/
+    └── .env          # فرانت Nuxt
+```
+
+Compose جدید را در همان پوشه و با همان نام پروژهٔ Compose قبلی اجرا کنید تا volumeهای موجود `postgres_data` و `registry_data` استفاده شوند. در این فایل نام پروژه به‌اجبار تعیین نشده است. اگر قبلاً گزینهٔ `-p` یا متغیر `COMPOSE_PROJECT_NAME` داشتید، همان را نگه دارید.
+
+فایل اصلی `.env` و پوشهٔ `auth` موجود سرور را نگه دارید. فایل [compose.env.example](compose.env.example) فقط نمونهٔ متغیرهای اصلی است. اطلاعات `POSTGRES_*` باید همان اطلاعات واقعی دیتابیس فعلی باشند؛ تغییر آن‌ها در فایل env، رمز یا نام دیتابیس داخل volume موجود را عوض نمی‌کند.
+
+برای فایل‌های برنامه از نمونه‌های زیر استفاده کنید:
+
+```bash
+mkdir -p panel taj
+cp panel/.env.example panel/.env
+cp taj/.env.example taj/.env
+chmod 600 panel/.env taj/.env
+nano panel/.env
+nano taj/.env
+```
+
+این دستورها برای اولین ساخت فایل‌های env هستند؛ اگر آن‌ها را از قبل ساخته‌اید، مستقیماً ویرایششان کنید. در صورت انتقال دستی فایل‌ها، محتوای نمونه‌ها را در مسیرهای بالا قرار دهید.
+
+### panel/.env — بک‌اند Vendure
+
+```dotenv
+COOKIE_SECRET=replace-me-with-a-long-random-secret
+SUPERADMIN_USERNAME=superadmin
+SUPERADMIN_PASSWORD=replace-me
+CORS_ORIGINS=http://188.212.97.228:3001
+STOREFRONT_URL=http://188.212.97.228:3001
+ASSET_URL_PREFIX=http://188.212.97.228:3000/assets/
+ZARINPAL_MERCHANT_ID=
+ZARINPAL_SANDBOX=true
+```
+
+مقادیر نمونهٔ رمزها را جایگزین کنید. آدرس فایل‌ها باید اسلش پایانی داشته باشد. برای پرداخت واقعی، تنظیمات درگاه را با حساب واقعی خود هماهنگ کنید.
+
+اتصال دیتابیس را خود Compose تنظیم می‌کند: `DB_HOST=postgres`، `DB_PORT=5432` و اطلاعات ورود از `POSTGRES_*` فایل اصلی `.env`. این مقادیر بر مقادیر احتمالی `DB_*` در `panel/.env` اولویت دارند. نیازی به باز کردن پورت PostgreSQL روی اینترنت نیست؛ پورت فعلی `127.0.0.1:5432:5432` حفظ شده است.
+
+### taj/.env — فرانت Nuxt
+
+```dotenv
+NUXT_PUBLIC_API_BASE_URL=http://188.212.97.228:3000/shop-api
+NUXT_PUBLIC_SITE_URL=http://188.212.97.228:3001
+NUXT_PUBLIC_CHANNEL_TOKEN=
+```
+
+آدرس API باید هم از مرورگر و هم از کانتینر فرانت قابل دسترسی باشد. اگر دامنه یا پورت عمومی را تغییر دادید، آدرس‌های عمومی در هر دو فایل را هماهنگ کنید. نام داخلی `backend` برای آدرس عمومی API مناسب نیست.
+
+اگر فایل‌هایتان به‌جای پوشه‌ها، `panel.env` و `taj.env` نام دارند، این دو مقدار را در فایل اصلی `.env` تنظیم کنید:
+
+```dotenv
+BACKEND_ENV_FILE=./panel.env
+FRONTEND_ENV_FILE=./taj.env
+```
+
+## دسترسی به رجیستری HTTP
+
+Docker سرور باید رجیستری را در `insecure-registries` بشناسد. در صورت نیاز گزینهٔ زیر را با تنظیمات موجود `/etc/docker/daemon.json` ادغام کنید؛ فایل تنظیمات فعلی را بازنویسی نکنید:
 
 ```json
 {
@@ -19,94 +86,55 @@
 }
 ```
 
-اعمال تغییر نیاز به restart سرویس Docker دارد و ممکن است کانتینرهای موجود را متوقف کند؛ این مرحله را در زمان مناسب روی سرور انجام دهید:
+اعمال تغییر daemon به restart سرویس Docker نیاز دارد و ممکن است کانتینرهای فعلی را متوقف کند؛ این مرحله را فقط در صورت نیاز و در زمان مناسب انجام دهید:
 
 ```bash
 sudo systemctl restart docker
 docker login 188.212.97.228:5000
 ```
 
-نام کاربری و رمز رجیستری با اطلاعات PostgreSQL متفاوت‌اند. از Docker Compose v2، یعنی دستور `docker compose` استفاده کنید.
+## دریافت و اجرای برنامه
 
-## ۲. کپی فایل‌ها روی سرور و تنظیم متغیرها
-
-فایل‌های `compose.yaml` و `.env.production.example` را در یک پوشه روی سرور قرار دهید. برای اجرای ایمیج‌های آماده به سورس پروژه نیاز نیست.
+از همان پوشهٔ Compose موجود سرور و با Docker Compose v2 اجرا کنید:
 
 ```bash
-cp .env.production.example .env.production
-chmod 600 .env.production
-nano .env.production
+docker compose config --quiet
+docker compose pull migrate backend worker frontend
+docker compose up -d migrate backend worker frontend
+docker compose ps -a
+docker compose logs --tail=100 migrate backend worker frontend
 ```
 
-مقادیر `replace-me` را با مقادیر واقعی جایگزین کنید. به‌خصوص این متغیرها باید تنظیم شوند:
+این دستور دریافت، ایمیج‌های برنامه را می‌گیرد؛ دریافت آن‌ها به رجیستری در حال اجرای سرور وابسته است. سرویس `postgres` به‌عنوان وابستگی برنامه مدیریت می‌شود. ترتیب شروع: سالم شدن PostgreSQL، موفقیت مایگریشن‌ها، آماده شدن API، سپس Worker و فرانت. خروج سرویس `migrate` با `Exited (0)` طبیعی است.
 
-- `DB_HOST`، `DB_PORT`، `DB_NAME`، `DB_USERNAME` و `DB_PASSWORD`: اتصال PostgreSQL موجود؛ نام پیشنهادی دیتابیس `vendure` است.
-- `COOKIE_SECRET`: رمز تصادفی طولانی برای کوکی‌ها.
-- `SUPERADMIN_USERNAME` و `SUPERADMIN_PASSWORD`: اطلاعات ادمین هنگام راه‌اندازی اولیهٔ Vendure.
-- `STOREFRONT_URL` و `CORS_ORIGINS`: آدرس عمومی فرانت، مثلاً `http://188.212.97.228:3001`.
-- `NUXT_PUBLIC_API_BASE_URL`: آدرس عمومی API، مثلاً `http://188.212.97.228:3000/shop-api`؛ باید هم از مرورگر و هم از کانتینر فرانت قابل دسترسی باشد.
-- `ASSET_URL_PREFIX`: آدرس عمومی فایل‌ها با اسلش پایانی، مثلاً `http://188.212.97.228:3000/assets/`.
-- `ZARINPAL_MERCHANT_ID` و `ZARINPAL_SANDBOX`: تنظیمات درگاه پرداخت.
+مایگریشن اولیهٔ `InitialVendure1790000000000` جدول‌های پایه را روی دیتابیس خالی می‌سازد و سپس پنج مایگریشن ویژگی‌های پروژه اجرا می‌شوند. در دیتابیسی که همهٔ جدول‌های پایه را دارد، مرحلهٔ ساخت آن‌ها رد می‌شود. ساختار پایهٔ ناقص با خطا متوقف می‌شود و باید بررسی شود. در صورت شکست مایگریشن، سرویس‌های برنامه شروع نمی‌شوند. جزئیات: [DATABASE-MIGRATIONS.md](DATABASE-MIGRATIONS.md).
 
-اگر دامنه یا پورت‌ها را تغییر دادید، آدرس‌های عمومی بالا را هم هماهنگ کنید. مقدار پیش‌فرض `host.docker.internal` برای دیتابیس با `host-gateway` به میزبان Docker اشاره می‌کند. PostgreSQL میزبان باید روی آدرسی قابل دسترسی از شبکهٔ Docker گوش دهد و دسترسی کاربر از آن شبکه در `pg_hba.conf` مجاز باشد؛ صرفاً گوش دادن روی `127.0.0.1` کافی نیست. دیتابیس را برای این کار بدون نیاز به اینترنت عمومی باز نکنید.
-
-اگر PostgreSQL در کانتینر دیگری است، `DB_HOST` را برابر نام آن سرویس بگذارید و سرویس‌های بک‌اند را به شبکهٔ مشترک با دیتابیس متصل کنید. فایل فعلی برای PostgreSQL روی میزبان یا یک آدرس شبکهٔ قابل دسترسی آماده شده است.
-
-## ۳. وضعیت اولیهٔ دیتابیس
-
-مایگریشن‌های فعلی پروژه، جدول‌های پایهٔ Vendure را از صفر نمی‌سازند. دیتابیس مقصد باید از قبل جدول‌های پایه و تاریخچهٔ مناسب مایگریشن‌ها را داشته باشد. برای دیتابیس کاملاً خالی، ابتدا یک مایگریشن اولیهٔ سازگار با مایگریشن‌های موجود لازم است، یا باید دیتابیس موجود و تاریخچهٔ آن را منتقل کنید.
-
-جزئیات در [DATABASE-MIGRATIONS.md](DATABASE-MIGRATIONS.md) است. سرویس `migrate` در صورت شکست با کد غیرصفر متوقف می‌شود تا برنامه روی دیتابیس ناقص شروع نشود.
-
-## ۴. دریافت ایمیج‌ها و اجرای پروژه
-
-از همان پوشهٔ فایل‌های Compose و محیط اجرا کنید:
-
-```bash
-docker compose --env-file .env.production pull
-docker compose --env-file .env.production up -d
-docker compose --env-file .env.production ps -a
-docker compose --env-file .env.production logs --tail=100 migrate backend worker frontend
-```
-
-ترتیب اجرا: ابتدا مایگریشن‌ها؛ پس از موفقیت، API؛ پس از سالم شدن API، فرانت و Worker. خروج سرویس `migrate` با وضعیت `Exited (0)` طبیعی است.
-
-با تنظیمات پیش‌فرض:
+آدرس‌های پیش‌فرض:
 
 - فرانت: `http://188.212.97.228:3001`
-- داشبورد: `http://188.212.97.228:3000/dashboard`
+- داشبورد Vendure: `http://188.212.97.228:3000/dashboard`
 - Shop API: `http://188.212.97.228:3000/shop-api`
 
-پورت‌های `3000` و `3001` باید برای دسترسی موردنظر در فایروال سرور مجاز باشند. اگر دامنه و reverse proxy دارید، آدرس‌ها را در فایل محیط با دامنه‌های واقعی تنظیم کنید. تنظیم فعلی برنامه هنوز ایمیل را در حالت dev داخل volume ذخیره می‌کند؛ ارسال واقعی ایمیل نیاز به تنظیم سرویس ایمیل در بک‌اند دارد.
+پورت‌های عمومی `3000` و `3001` باید برای دسترسی موردنظر در فایروال مجاز باشند. برنامه فعلاً ایمیل را در حالت dev داخل volume ذخیره می‌کند؛ ارسال واقعی ایمیل به تنظیم سرویس ایمیل در بک‌اند نیاز دارد.
 
-## ۵. به‌روزرسانی بعدی
-
-پس از منتشر شدن نسخهٔ جدید، برای توقف Worker در زمان مایگریشن و اجرای مجدد سرویس مایگریشن:
+## به‌روزرسانی نسخهٔ برنامه
 
 ```bash
-docker compose --env-file .env.production pull
-docker compose --env-file .env.production stop frontend worker backend
-docker compose --env-file .env.production rm -f migrate
-docker compose --env-file .env.production up -d
+docker compose pull migrate backend worker frontend
+docker compose stop frontend worker backend
+docker compose rm -f migrate
+docker compose up -d migrate backend worker frontend
 ```
 
-این روش هنگام به‌روزرسانی وقفه ایجاد می‌کند. Volumeهای `assets` و `email-output` فایل‌های تولیدشده را نگه می‌دارند. برای توقف معمولی از `docker compose --env-file .env.production down` استفاده کنید؛ گزینهٔ `-v` داده‌های این volumeها را حذف می‌کند.
+این روش هنگام به‌روزرسانی برنامه وقفه ایجاد می‌کند. فایل‌های آپلودی و خروجی ایمیل در volumeهای `assets` و `email-output` نگه‌داری می‌شوند. از `docker compose down -v` استفاده نکنید؛ این دستور volumeهای تعریف‌شده، از جمله داده‌های PostgreSQL و رجیستری، را حذف می‌کند. برای توقف فقط برنامه، از `docker compose stop frontend worker backend` استفاده کنید.
 
-## انتشار ایمیج از سیستم توسعه
-
-از ریشهٔ پروژه، پس از ورود به رجیستری:
+## انتشار از سیستم توسعه
 
 ```bash
 docker login 188.212.97.228:5000
 bash scripts/publish-images.sh
 ```
 
-اسکریپت هر دو معماری را می‌سازد، تگ‌های معماری را پوش می‌کند و یک manifest مشترک `latest` می‌سازد. برای یک نسخهٔ مشخص:
-
-```bash
-IMAGE_TAG=v1 bash scripts/publish-images.sh
-```
-
-در این حالت روی سرور نیز `IMAGE_TAG=v1` را در `.env.production` تنظیم کنید. سیستم توسعه باید امکان بیلد هر دو معماری را داشته باشد؛ Docker Desktop این قابلیت را فراهم می‌کند.
+برای انتشار نسخهٔ مشخص، مثلاً `v1`، دستور `IMAGE_TAG=v1 bash scripts/publish-images.sh` را اجرا کنید و روی سرور نیز `IMAGE_TAG=v1` را در فایل اصلی `.env` بگذارید.
 
 مراجع: [ترتیب اجرای Compose](https://docs.docker.com/compose/how-tos/startup-order/) و [تنظیم رجیستری HTTP](https://docs.docker.com/reference/cli/dockerd/#insecure-registries).

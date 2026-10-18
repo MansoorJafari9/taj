@@ -40,8 +40,9 @@ port. The dashboard is included and served at `/dashboard`.
 
 Set `ASSET_URL_PREFIX` to the backend's public asset URL (with a trailing slash).
 The current application configuration uses email dev mode; configure real email
-delivery separately. The existing migrations assume an initialized Vendure
-database; building the image does not initialize a database.
+delivery separately. The initial migration creates the core Vendure tables on an
+empty database before the feature migrations run. Building the image does not
+connect to or initialize a database.
 
 ## Storefront
 

@@ -38,6 +38,23 @@ function backToTop() {
           </NuxtLink>
           <p class="mt-5 text-sm leading-8 text-[#bad1c5]">{{ $t('shop.footerDescription') }}</p>
           <div class="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold text-[#dce9df]"><span v-for="flavour in ['heroNut', 'heroDried', 'heroChocolate']" :key="flavour" class="rounded-full border border-white/15 px-3 py-1.5">{{ $t(`shop.${flavour}`) }}</span></div>
+          <a
+            href="https://trustseal.enamad.ir/?id=8208448&Code=IovPHTGaA0oHDQZOE6OX9JAig6CqKwhk"
+            target="_blank"
+            rel="noopener"
+            referrerpolicy="origin"
+            class="mt-6 inline-flex rounded-2xl bg-white p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4ad72]"
+          >
+            <img
+              src="https://trustseal.enamad.ir/logo.aspx?id=8208448&Code=IovPHTGaA0oHDQZOE6OX9JAig6CqKwhk"
+              referrerpolicy="origin"
+              code="IovPHTGaA0oHDQZOE6OX9JAig6CqKwhk"
+              :alt="$t('shop.footerEnamad')"
+              width="112"
+              height="112"
+              class="size-28 cursor-pointer object-contain"
+            >
+          </a>
         </div>
 
         <nav :aria-label="$t('shop.footerExplore')">
