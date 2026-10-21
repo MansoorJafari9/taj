@@ -36,7 +36,8 @@ const productQuery = `
       collections { id slug parent { id } }
       featuredAsset { id preview }
       assets { id preview }
-      variants { id name priceWithTax currencyCode stockLevel saleOffer { percentage } facetValues { id } }
+      optionGroups { id code name options { id code name } }
+      variants { id name priceWithTax currencyCode stockLevel saleOffer { percentage } facetValues { id } options { id } }
     }
   }
 `

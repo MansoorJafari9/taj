@@ -3,6 +3,7 @@ import { sanitizeContent } from '~/utils/sanitizeContent'
 import { formatPrice } from '~/utils/formatPrice'
 import { OrderMutationError } from '~/services/api/orders.service'
 import { salePrice } from '~/utils/salePrice'
+import { chooseVariantOption, getOptionVariants, getVariantOptionGroups } from '~/utils/variantOptions'
 
 const route = useRoute()
 const { t, locale } = useI18n()
@@ -18,14 +19,13 @@ const addError = ref('')
 const added = ref(false)
 
 const { data: product, pending, error } = await useAsyncData(
-  'product-detail',
+  () => `product-detail:${locale.value}:${slug.value}`,
   () => $services.products.getByIdentifier(slug.value, locale.value),
-  { watch: [slug, locale] },
 )
 const { data: relatedProducts, pending: relatedPending } = await useAsyncData(
-  'product-related',
+  () => `product-related:${locale.value}:${slug.value}`,
   async () => product.value ? await $services.products.listRelated(product.value, locale.value, 4) : [],
-  { watch: [product, locale] },
+  { watch: [product] },
 )
 watch(product, value => {
   selectedVariantId.value = value?.variants.find(variant => variant.saleOffer && variant.stockLevel !== 'OUT_OF_STOCK')?.id
@@ -41,6 +41,24 @@ watch(selectedVariantId, () => {
   added.value = false
 })
 const selectedVariant = computed(() => product.value?.variants.find(variant => variant.id === selectedVariantId.value) ?? product.value?.variants[0])
+const optionGroups = computed(() => product.value ? getVariantOptionGroups(product.value.optionGroups, product.value.variants) : [])
+const optionRows = computed(() => optionGroups.value.map((group, groupIndex) => ({
+  ...group,
+  options: group.options.map(option => {
+    const variants = getOptionVariants(product.value?.variants ?? [], optionGroups.value, selectedVariant.value, groupIndex, option.id)
+    return {
+      ...option,
+      selected: selectedVariant.value?.options.some(value => value.id === option.id) ?? false,
+      disabled: !variants.length,
+      outOfStock: variants.length > 0 && variants.every(variant => variant.stockLevel === 'OUT_OF_STOCK'),
+    }
+  }),
+})))
+
+function selectOption(groupIndex: number, optionId: string) {
+  const variant = chooseVariantOption(product.value?.variants ?? [], optionGroups.value, selectedVariant.value, groupIndex, optionId)
+  if (variant) selectedVariantId.value = variant.id
+}
 const safeDescription = computed(() => sanitizeContent(product.value?.description))
 const formattedPrice = computed(() => selectedVariant.value ? formatPrice(selectedVariant.value.priceWithTax, selectedVariant.value.currencyCode, locale.value) : '')
 const discountedPrice = computed(() => selectedVariant.value ? salePrice(selectedVariant.value) : null)
@@ -81,10 +99,32 @@ useTajSeo({ title: computed(() => product.value ? `${product.value.name} | ${sit
         <h1 class="mt-3 text-3xl font-bold tracking-tight text-brown sm:text-5xl">{{ product.name }}</h1>
         <div v-if="safeDescription" class="mt-6 max-w-xl leading-8 text-muted [&_a]:text-brown [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-s-2 [&_blockquote]:border-border [&_blockquote]:ps-4 [&_h2]:font-bold [&_h3]:font-bold [&_li]:ms-5 [&_li]:list-disc [&_ol_li]:list-decimal [&_p+p]:mt-3" v-html="safeDescription" />
         <div class="mt-8 border-y border-border py-6">
-          <p class="text-xs font-bold tracking-[0.16em] text-muted">{{ $t('shop.variants') }}</p>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button v-for="variant in product.variants" :key="variant.id" type="button" :aria-pressed="selectedVariant?.id === variant.id" class="rounded-full border px-4 py-2 text-sm transition" :class="selectedVariant?.id === variant.id ? 'border-brown bg-brown text-off-white' : 'border-border text-brown hover:border-brown'" @click="selectedVariantId = variant.id">{{ variant.name }}</button>
+          <div v-if="optionRows.length" class="space-y-6">
+            <fieldset v-for="(group, groupIndex) in optionRows" :key="group.id" :disabled="adding" class="min-w-0">
+              <legend class="text-sm font-bold text-brown">{{ group.name }}</legend>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button
+                  v-for="option in group.options"
+                  :key="option.id"
+                  type="button"
+                  :aria-pressed="option.selected"
+                  :disabled="option.disabled"
+                  class="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brown disabled:cursor-not-allowed disabled:opacity-40"
+                  :class="option.selected ? 'border-brown bg-brown text-off-white' : 'border-border text-brown hover:border-brown'"
+                  @click="selectOption(groupIndex, option.id)"
+                >
+                  {{ option.name }}
+                  <span v-if="option.outOfStock" class="text-xs opacity-75">({{ $t('shop.unavailable') }})</span>
+                </button>
+              </div>
+            </fieldset>
           </div>
+          <template v-else>
+            <p class="text-xs font-bold tracking-[0.16em] text-muted">{{ $t('shop.variants') }}</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button v-for="variant in product.variants" :key="variant.id" type="button" :disabled="adding" :aria-pressed="selectedVariant?.id === variant.id" class="rounded-full border px-4 py-2 text-sm transition disabled:opacity-40" :class="selectedVariant?.id === variant.id ? 'border-brown bg-brown text-off-white' : 'border-border text-brown hover:border-brown'" @click="selectedVariantId = variant.id">{{ variant.name }}</button>
+            </div>
+          </template>
         </div>
         <div class="mt-6 flex items-end justify-between gap-4">
           <div><p class="text-sm text-muted">{{ $t('shop.price') }}</p><span v-if="discountedPrice !== null" class="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-success">{{ $t('shop.salePercent', { percent: selectedVariant?.saleOffer?.percentage }) }}</span><p v-if="discountedPrice !== null" class="mt-2 text-sm text-muted"><del>{{ formattedPrice }}</del></p><p class="mt-1 text-3xl font-bold tracking-tight text-brown">{{ formattedDiscountedPrice || formattedPrice }}</p></div>

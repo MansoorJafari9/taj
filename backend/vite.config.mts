@@ -50,6 +50,9 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
+            // The product route imports this component relatively. Keep our fix
+            // outside node_modules so clean Docker builds retain it.
+            './components/generate-variants-panel.js': resolve(__dirname, './src/plugins/persian-dashboard/dashboard/generate-variants-panel.tsx'),
             '@/vdb/framework/page/use-extended-router.js': resolve(__dirname, './src/plugins/persian-dashboard/dashboard/use-extended-router.ts'),
             // Vendure's built-in MoneyInput hard-codes two decimals. Replace only
             // its Dashboard component so IRR/IRT inputs can show whole tomans.

@@ -21,7 +21,22 @@ export type ProductSummary = {
   variants: ProductVariantSummary[]
 }
 
-export type ProductDetail = ProductSummary & {
+export type ProductOption = { id: string, code: string, name: string }
+
+export type ProductOptionGroup = {
+  id: string
+  code: string
+  name: string
+  options: ProductOption[]
+}
+
+export type ProductVariantDetail = ProductVariantSummary & {
+  options: Array<{ id: string }>
+}
+
+export type ProductDetail = Omit<ProductSummary, 'variants'> & {
+  variants: ProductVariantDetail[]
+  optionGroups: ProductOptionGroup[]
   description: string
   assets: ProductAsset[]
   facetValues: Array<{ id: string }>
